@@ -16,9 +16,11 @@ import com.example.myapplication.databinding.ActivityMainBinding;
 public class MainActivity extends AppCompatActivity implements AuthView {
 
     public static final String MESSAGE = "MESSAGE";
-    // Used to load the 'myapplication' library on application startup.
+
     static {
+        // Used to load the 'myapplication' library on application startup.
         System.loadLibrary("myapplication");
+        //System.loadLibrary("opencv_java4");
     }
 
     private ActivityMainBinding binding;
@@ -55,8 +57,9 @@ public class MainActivity extends AppCompatActivity implements AuthView {
 
     @Override
     public void openContentScreen(@NonNull String welcomeMSG) {
-        Intent intent = new Intent(this, SecondActivity.class);
-        intent.putExtra(MESSAGE, welcomeMSG);
+        //Intent intent = new Intent(this, SecondActivity.class);
+        //intent.putExtra(MESSAGE, welcomeMSG);
+        Intent intent = new Intent(this, CameraCapture.class);
         startActivity(intent);
     }
 

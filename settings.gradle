@@ -8,3 +8,8 @@ dependencyResolutionManagement {
 }
 rootProject.name = "My Application"
 include ':app'
+
+def opencv='C:\\Development\\opencv-4.5.3-android-sdk'
+println opencv
+include ':opencv'
+project(':opencv').projectDir = new File(opencv + '\\sdk')
