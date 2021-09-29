@@ -24,6 +24,7 @@
         <activity
             android:name=".CameraCapture"
             android:screenOrientation="landscape"
+            android:configChanges="orientation|keyboardHidden"
             android:exported="true" />
         <activity
             android:name=".SecondActivity"

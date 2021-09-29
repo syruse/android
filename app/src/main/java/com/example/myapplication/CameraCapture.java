@@ -4,6 +4,7 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import android.content.Context;
 import android.content.res.AssetManager;
+import android.content.res.Configuration;
 import android.os.Bundle;
 import android.util.Log;
 import android.util.Pair;
@@ -17,9 +18,12 @@ import org.opencv.android.CameraBridgeViewBase.CvCameraViewFrame;
 import org.opencv.android.CameraBridgeViewBase.CvCameraViewListener2;
 import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
+import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfPoint;
+import org.opencv.core.MatOfPoint2f;
 import org.opencv.core.Point;
+import org.opencv.core.Rect;
 import org.opencv.core.Scalar;
 import org.opencv.core.Size;
 import org.opencv.dnn.Dnn;
@@ -31,6 +35,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -64,6 +69,12 @@ public class CameraCapture extends CameraActivity implements CvCameraViewListene
                 }
             }
         };
+    }
+
+    @Override
+    public void onConfigurationChanged(Configuration newConfig) {
+        // ignore orientation/keyboard change
+        super.onConfigurationChanged(newConfig);
     }
 
     @Override
@@ -159,10 +170,13 @@ public class CameraCapture extends CameraActivity implements CvCameraViewListene
             }
         }*/
         Mat frame = inputFrame.rgba();
+        final Size frameSize = frame.size();
         Mat blurred = Mat.zeros(frame.size(), frame.type());
         Imgproc.cvtColor(frame, frame, Imgproc.COLOR_BGR2GRAY);
         Imgproc.bilateralFilter(frame, blurred, 9, 25, 25);
         Imgproc.Canny(blurred, frame, 30, 200);
+
+        Log.d(TAG, " frame.size() " + frame.size());
 
         Mat mHierarchy = new Mat();
         Scalar CONTOUR_COLOR = new Scalar(0,255,0,255);
@@ -187,9 +201,58 @@ public class CameraCapture extends CameraActivity implements CvCameraViewListene
         );
 
         Log.d(TAG, " largest_area " + largest_area.index + " " + contours.size());
-        Imgproc.drawContours(inputFrame.rgba(), contours, largest_area.index, CONTOUR_COLOR, 8, Imgproc.LINE_AA);
+        //Imgproc.drawContours(inputFrame.rgba(), contours, largest_area.index, CONTOUR_COLOR, 8, Imgproc.LINE_AA);
 
-        return frame;
+        final var contour = contours.get(largest_area.index);
+        Imgproc.cvtColor(inputFrame.rgba(), frame, Imgproc.COLOR_BGR2RGBA);
+
+        var perimeter = Imgproc.arcLength(new MatOfPoint2f(contour.toArray()), true);
+        var approx = new MatOfPoint2f();
+        Imgproc.approxPolyDP(new MatOfPoint2f(contour.toArray()), approx, 0.02 * perimeter, true);
+
+        // is this quad
+        if( approx.rows() == 4) {
+            final Rect boundingRect = Imgproc.boundingRect(approx);
+
+            Log.d(TAG, " boundingRect " + boundingRect);
+            //Imgproc.drawContours(inputFrame.rgba(), new ArrayList<>(List.of(new MatOfPoint(approx.toArray()))), 0, CONTOUR_COLOR, 8, Imgproc.LINE_AA);
+
+            /*Mat rotatedRect = new Mat();
+            Imgproc.boxPoints(Imgproc.minAreaRect(new MatOfPoint2f(approx.toArray())), rotatedRect);*/
+
+            Log.d(TAG, " approx " + approx.rows() + " " + approx.cols());
+
+            /*Mat transformation = Imgproc.getAffineTransform(
+                    new MatOfPoint2f(new Point(approx.get(0, 0)),
+                                     new Point(approx.get(1, 0)),
+                                     new Point(approx.get(2, 0))),
+                    Utils.convertRectToMatOfPoint(boundingRect));*/
+
+            Mat rect = new Mat(4, 1, CvType.CV_32FC2);
+            rect.put(0, 0, frameSize.width, 0);
+            rect.put(1, 0, 0, 0);
+            rect.put(2, 0, 0, frameSize.height);
+            rect.put(3, 0, frameSize.width, frameSize.height);
+            Mat transformation = Imgproc.getPerspectiveTransform(approx, rect);
+
+            Log.d(TAG, " rotatedRect " + approx.dump());
+            Log.d(TAG, " 1 " + approx.get(0, 0)[0]);
+            Log.d(TAG, " 2 " + approx.get(1, 0)[0]);
+            Log.d(TAG, " 3 " + approx.get(2, 0)[0]);
+            Log.d(TAG, " 4 " + approx.get(3, 0)[0]);
+
+            //Imgproc.warpAffine(frame, frame, transformation, frame.size());
+            Imgproc.warpPerspective(frame,frame, transformation, frame.size());
+
+        /*Mat image_roi = new Mat(frame, boundingRect);
+        Imgproc.warpAffine(image_roi, image_roi, transformation, image_roi.size());
+        Imgproc.resize(image_roi, image_roi, frame.size());*/
+
+            return frame;
+        }
+        else {
+            return inputFrame.rgba();
+        }
     }
 
     @Override
