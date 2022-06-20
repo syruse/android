@@ -20,7 +20,8 @@ public class MainActivity extends AppCompatActivity implements AuthView {
     static {
         // Used to load the 'myapplication' library on application startup.
         System.loadLibrary("myapplication");
-        //System.loadLibrary("opencv_java4");
+        // opencv lib binding is executed in CameraCapture activity over special opencv initializer
+        // System.loadLibrary("opencv_java4");
     }
 
     private ActivityMainBinding binding;
