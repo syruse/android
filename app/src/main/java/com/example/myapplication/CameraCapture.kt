@@ -1,22 +1,19 @@
 package com.example.myapplication
 
 import android.content.Context
-import org.opencv.android.CameraActivity
-import org.opencv.android.CameraBridgeViewBase.CvCameraViewListener2
-import org.opencv.android.CameraBridgeViewBase
-import org.opencv.android.BaseLoaderCallback
-import org.opencv.core.Mat
-import android.os.Bundle
-import android.view.WindowManager
-import android.view.SurfaceView
-import androidx.lifecycle.ViewModelProvider
-import org.opencv.android.OpenCVLoader
-import org.opencv.android.LoaderCallbackInterface
-import org.opencv.android.CameraBridgeViewBase.CvCameraViewFrame
-import org.opencv.imgproc.Imgproc
 import android.content.res.Configuration
+import android.os.Bundle
 import android.util.Log
+import android.view.SurfaceView
 import android.view.View
+import android.view.WindowManager
+import android.widget.Button
+import androidx.lifecycle.ViewModelProvider
+import org.opencv.android.*
+import org.opencv.android.CameraBridgeViewBase.CvCameraViewFrame
+import org.opencv.android.CameraBridgeViewBase.CvCameraViewListener2
+import org.opencv.core.Mat
+import org.opencv.imgproc.Imgproc
 import java.io.BufferedInputStream
 import java.io.File
 import java.io.FileOutputStream
@@ -25,6 +22,7 @@ import java.io.IOException
 class CameraCapture : CameraActivity(), CvCameraViewListener2 {
     private lateinit var mOpenCvCameraView: CameraBridgeViewBase
     private lateinit var mViewModel: ScannerViewModel
+    private lateinit var mConfirmButton: Button
     private var mSnapShot: Mat? = null
     private var mLoaderCallback: BaseLoaderCallback
 
@@ -42,21 +40,36 @@ class CameraCapture : CameraActivity(), CvCameraViewListener2 {
                 }
             }
         }
+        supportFragmentManager.addOnBackStackChangedListener {
+            if (supportFragmentManager.backStackEntryCount == 0) {
+                Log.d(Utils.TAG, "CameraCapture: no fragments in foreground")
+                mConfirmButton.visibility = View.VISIBLE
+            } else {
+                Log.d(Utils.TAG, "CameraCapture: fragment is in foreground")
+                mConfirmButton.visibility = View.GONE
+            }
+        }
     }
 
     override fun onConfigurationChanged(newConfig: Configuration) {
-        // ignore orientation/keyboard change
+        // ignore keyboard change
         super.onConfigurationChanged(newConfig)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        window.setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
+            WindowManager.LayoutParams.FLAG_FULLSCREEN)
         setContentView(R.layout.activity_camera_capture)
+
+        mConfirmButton = findViewById<View>(R.id.buttonOk) as Button
         mOpenCvCameraView = findViewById<View>(R.id.view) as CameraBridgeViewBase
-        mOpenCvCameraView.visibility = SurfaceView.VISIBLE
         mOpenCvCameraView.setCvCameraViewListener(this)
         mViewModel = ViewModelProvider(this).get(ScannerViewModel::class.java)
+
+        mOpenCvCameraView.visibility = SurfaceView.VISIBLE
+        mConfirmButton.visibility = View.VISIBLE
     }
 
     public override fun onPause() {
@@ -92,6 +105,7 @@ class CameraCapture : CameraActivity(), CvCameraViewListener2 {
         val frame = inputFrame.rgba()
         Imgproc.cvtColor(frame, frame, Imgproc.COLOR_BGR2RGBA)
         mSnapShot = frame
+
         return frame
     }
 

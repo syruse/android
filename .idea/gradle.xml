@@ -14,7 +14,6 @@
             <option value="$PROJECT_DIR$/../opencv-4.5.3-android-sdk/sdk" />
           </set>
         </option>
-        <option name="resolveModulePerSourceSet" value="false" />
       </GradleProjectSettings>
     </option>
   </component>
