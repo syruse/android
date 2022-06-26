@@ -7,42 +7,36 @@ import androidx.lifecycle.ViewModelProvider
 import android.graphics.Bitmap
 import android.util.Log
 import android.view.View
-import android.widget.ImageView
 import androidx.fragment.app.Fragment
-import com.example.myapplication.Utils.TAG
-import org.opencv.android.Utils
-import org.opencv.core.Mat
+import androidx.lifecycle.Observer
+import org.opencv.android.Utils as OpenCVUtils
+import com.example.myapplication.databinding.PhotoFragmentBinding
 
 class PhotoFragment : Fragment() {
     private lateinit var mViewModel: ScannerViewModel
+    private lateinit var binding: PhotoFragmentBinding
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
         mViewModel = ViewModelProvider(requireActivity()).get(ScannerViewModel::class.java)
-        val view = inflater.inflate(R.layout.photo_fragment, container, false)
-
-        if (mViewModel.frame != null) {
-            val snapShot = mViewModel.frame as Mat
+        binding = PhotoFragmentBinding.inflate(layoutInflater, container, false)
+        mViewModel.liveData().observe(viewLifecycleOwner, Observer { snapShot ->
+            Log.d(Utils.TAG, " frame processing ")
             var bitMap = Bitmap.createBitmap(snapShot.cols(), snapShot.rows(), Bitmap.Config.ARGB_8888)
-            Utils.matToBitmap(snapShot, bitMap)
-            val imgViewBefore = view.findViewById<View>(R.id.imgViewBefore) as ImageView
+            OpenCVUtils.matToBitmap(snapShot, bitMap)
+            val imgViewBefore = binding.imgViewBefore
             imgViewBefore.setImageBitmap(bitMap)
-            val processedMat = mViewModel.makeScanning(snapShot, true)
-            if (processedMat != null) {
+            Utils.makeScanning(snapShot, true)?.let {
                 bitMap =
-                    Bitmap.createBitmap(processedMat.cols(), processedMat.rows(), Bitmap.Config.ARGB_8888)
-                Utils.matToBitmap(processedMat, bitMap)
-                val imgViewAfter = view.findViewById<View>(R.id.imgViewAfter) as ImageView
+                    Bitmap.createBitmap(it.cols(), it.rows(), Bitmap.Config.ARGB_8888)
+                OpenCVUtils.matToBitmap(it, bitMap)
+                val imgViewAfter = binding.imgViewAfter
                 imgViewAfter.setImageBitmap(bitMap)
-            } else {
-                Log.e(TAG, " !!! couldn't detect quadratic area ")
             }
-        } else {
-            Log.e(TAG, " !!! invalid image ")
-        }
+        })
 
         //getActivity().setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
-        return view
+        return binding.root
     }
 }

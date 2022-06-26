@@ -14,15 +14,13 @@ import org.opencv.android.CameraBridgeViewBase.CvCameraViewFrame
 import org.opencv.android.CameraBridgeViewBase.CvCameraViewListener2
 import org.opencv.core.Mat
 import org.opencv.imgproc.Imgproc
-import java.io.BufferedInputStream
-import java.io.File
-import java.io.FileOutputStream
-import java.io.IOException
+import com.example.myapplication.databinding.ActivityCameraCaptureBinding
 
 class CameraCapture : CameraActivity(), CvCameraViewListener2 {
     private lateinit var mOpenCvCameraView: CameraBridgeViewBase
     private lateinit var mViewModel: ScannerViewModel
     private lateinit var mConfirmButton: Button
+    private lateinit var binding: ActivityCameraCaptureBinding
     private var mSnapShot: Mat? = null
     private var mLoaderCallback: BaseLoaderCallback
 
@@ -61,10 +59,11 @@ class CameraCapture : CameraActivity(), CvCameraViewListener2 {
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         window.setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
             WindowManager.LayoutParams.FLAG_FULLSCREEN)
-        setContentView(R.layout.activity_camera_capture)
+        binding = ActivityCameraCaptureBinding.inflate(layoutInflater)
+        setContentView(binding.root)
 
-        mConfirmButton = findViewById<View>(R.id.buttonOk) as Button
-        mOpenCvCameraView = findViewById<View>(R.id.view) as CameraBridgeViewBase
+        mConfirmButton = binding.buttonOk
+        mOpenCvCameraView = binding.view
         mOpenCvCameraView.setCvCameraViewListener(this)
         mViewModel = ViewModelProvider(this).get(ScannerViewModel::class.java)
 
@@ -114,34 +113,9 @@ class CameraCapture : CameraActivity(), CvCameraViewListener2 {
     }
 
     fun onButtonClicked(view: View?) {
-        mViewModel.frame = mSnapShot
+        mViewModel.setFrame( mSnapShot ?: Mat())
         supportFragmentManager.beginTransaction().replace(
             R.id.fragmentContainerView, PhotoFragment()
         ).addToBackStack(null).commit()
-    }
-
-    companion object {
-        // for using local storage as photo supplier
-        private fun getPath(file: String, context: Context): String {
-            val assetManager = context.assets
-            var inputStream: BufferedInputStream? = null
-            try {
-                // Read data from assets.
-                inputStream = BufferedInputStream(assetManager.open(file))
-                val data = ByteArray(inputStream.available())
-                inputStream.read(data)
-                inputStream.close()
-                // Create copy file in storage.
-                val outFile = File(context.filesDir, file)
-                val os = FileOutputStream(outFile)
-                os.write(data)
-                os.close()
-                // Return a path to file which may be read in common way.
-                return outFile.absolutePath
-            } catch (ex: IOException) {
-                Log.i(Utils.TAG, "Failed to upload a file")
-            }
-            return ""
-        }
     }
 }

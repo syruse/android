@@ -1,12 +1,17 @@
 package com.example.myapplication
 
+import android.content.Context
 import android.util.Log
 import org.opencv.core.*
+import org.opencv.imgcodecs.Imgcodecs
 import org.opencv.imgproc.Imgproc
+import java.io.File
 import java.util.ArrayList
 
 object Utils {
     const val TAG = "Scanner"
+    private val CONTOUR_COLOR = Scalar(0.0, 255.0, 0.0, 255.0)
+
     fun convertRectToMatOfPoint(rect: Rect): MatOfPoint2f {
         val mPoints = MatOfPoint2f()
         val points: MutableList<Point> = ArrayList()
@@ -74,5 +79,50 @@ object Utils {
         //final var contour = contours.get(largestArea.index);
         //Imgproc.drawContours(inputFrame.rgba(), contours, largestArea.index, CONTOUR_COLOR, 8, Imgproc.LINE_AA);
         return largestArea.index
+    }
+
+    fun makeScanning(frame: Mat, isDecoratedSrcByContour: Boolean): Mat? {
+        val outFrame = frame.clone()
+        val frameSize = frame.size()
+        Log.d(TAG, " frameSize: $frameSize")
+        val contours = Utils.findContours(frame)
+        val screenRect = Mat(4, 1, CvType.CV_32FC2)
+        screenRect.put(0, 0, frameSize.width, 0.0)
+        screenRect.put(1, 0, 0.0, 0.0)
+        screenRect.put(2, 0, 0.0, frameSize.height)
+        screenRect.put(3, 0, frameSize.width, frameSize.height)
+        val approximatedContour = MatOfPoint2f()
+
+        // is this quad
+        if (recognizeOuterQuad(contours, approximatedContour) >= 0) {
+            if (isDecoratedSrcByContour) {
+                Imgproc.drawContours(
+                    frame,
+                    listOf(MatOfPoint(*approximatedContour.toArray())),
+                    0, CONTOUR_COLOR, 8, Imgproc.LINE_AA
+                )
+            }
+            Log.d(
+                TAG,
+                " approximatedContour " + approximatedContour.rows() + " " + approximatedContour.cols()
+            )
+            val transformation = Imgproc.getPerspectiveTransform(approximatedContour, screenRect)
+            Log.d(TAG, " approximated contour " + approximatedContour.dump())
+            Log.d(TAG, " 1 " + approximatedContour[0, 0][0])
+            Log.d(TAG, " 2 " + approximatedContour[1, 0][0])
+            Log.d(TAG, " 3 " + approximatedContour[2, 0][0])
+            Log.d(TAG, " 4 " + approximatedContour[3, 0][0])
+            Imgproc.warpPerspective(frame, outFrame, transformation, frameSize)
+
+            return outFrame
+        } else {
+            return null
+        }
+    }
+
+    fun saveImage(img: Mat, context: Context) {
+        val path = context.filesDir
+        val file = File(path, "img0.jpg")
+        Imgcodecs.imwrite(file.absolutePath, img);
     }
 }
