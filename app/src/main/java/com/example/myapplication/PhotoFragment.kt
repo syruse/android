@@ -22,21 +22,24 @@ class PhotoFragment : Fragment() {
         mViewModel = ViewModelProvider(requireActivity()).get(ScannerViewModel::class.java)
         binding = PhotoFragmentBinding.inflate(layoutInflater, container, false)
         mViewModel.liveData().observe(viewLifecycleOwner, Observer { snapShot ->
-            Log.d(Utils.TAG, " frame processing ")
-            var bitMap = Bitmap.createBitmap(snapShot.cols(), snapShot.rows(), Bitmap.Config.ARGB_8888)
-            OpenCVUtils.matToBitmap(snapShot, bitMap)
-            val imgViewBefore = binding.imgViewBefore
-            imgViewBefore.setImageBitmap(bitMap)
-            Utils.makeScanning(snapShot, true)?.let {
-                bitMap =
-                    Bitmap.createBitmap(it.cols(), it.rows(), Bitmap.Config.ARGB_8888)
-                OpenCVUtils.matToBitmap(it, bitMap)
-                val imgViewAfter = binding.imgViewAfter
-                imgViewAfter.setImageBitmap(bitMap)
+            Log.d(Utils.TAG, " frame processing with number of cols: " + snapShot.cols() + " rows: " + snapShot.rows())
+            if (snapShot.cols() > 0 && snapShot.rows() > 0) {
+                var bitMap = Bitmap.createBitmap(snapShot.cols(), snapShot.rows(), Bitmap.Config.ARGB_8888)
+                OpenCVUtils.matToBitmap(snapShot, bitMap)
+                val imgViewBefore = binding.imgViewBefore
+                imgViewBefore.setImageBitmap(bitMap)
+                Utils.makeScanning(snapShot, true)?.let {
+                    bitMap =
+                        Bitmap.createBitmap(it.cols(), it.rows(), Bitmap.Config.ARGB_8888)
+                    OpenCVUtils.matToBitmap(it, bitMap)
+                    val imgViewAfter = binding.imgViewAfter
+                    imgViewAfter.setImageBitmap(bitMap)
+                }
+            } else {
+                Log.e(Utils.TAG, " invalid frame processed: ")
             }
         })
 
-        //getActivity().setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
         return binding.root
     }
 }

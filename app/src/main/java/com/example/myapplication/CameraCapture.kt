@@ -1,31 +1,35 @@
 package com.example.myapplication
 
-import android.content.Context
 import android.content.res.Configuration
 import android.os.Bundle
 import android.util.Log
-import android.view.SurfaceView
-import android.view.View
-import android.view.WindowManager
+import android.view.*
 import android.widget.Button
+import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
+import androidx.navigation.Navigation
+import androidx.navigation.findNavController
+import androidx.navigation.fragment.NavHostFragment
+import androidx.navigation.fragment.findNavController
+import com.example.myapplication.databinding.ActivityMainBinding
+import com.example.myapplication.databinding.CameraCaptureFragmentBinding
+import com.example.myapplication.databinding.PhotoFragmentBinding
 import org.opencv.android.*
 import org.opencv.android.CameraBridgeViewBase.CvCameraViewFrame
 import org.opencv.android.CameraBridgeViewBase.CvCameraViewListener2
 import org.opencv.core.Mat
 import org.opencv.imgproc.Imgproc
-import com.example.myapplication.databinding.ActivityCameraCaptureBinding
 
-class CameraCapture : CameraActivity(), CvCameraViewListener2 {
+class CameraCapture :  CameraFragment(), CvCameraViewListener2 {
     private lateinit var mOpenCvCameraView: CameraBridgeViewBase
     private lateinit var mViewModel: ScannerViewModel
     private lateinit var mConfirmButton: Button
-    private lateinit var binding: ActivityCameraCaptureBinding
+    private lateinit var binding: CameraCaptureFragmentBinding
     private var mSnapShot: Mat? = null
     private var mLoaderCallback: BaseLoaderCallback
 
     init {
-        mLoaderCallback = object : BaseLoaderCallback(this) {
+        mLoaderCallback = object : BaseLoaderCallback(context) {
             override fun onManagerConnected(status: Int) {
                 when (status) {
                     SUCCESS -> {
@@ -38,15 +42,6 @@ class CameraCapture : CameraActivity(), CvCameraViewListener2 {
                 }
             }
         }
-        supportFragmentManager.addOnBackStackChangedListener {
-            if (supportFragmentManager.backStackEntryCount == 0) {
-                Log.d(Utils.TAG, "CameraCapture: no fragments in foreground")
-                mConfirmButton.visibility = View.VISIBLE
-            } else {
-                Log.d(Utils.TAG, "CameraCapture: fragment is in foreground")
-                mConfirmButton.visibility = View.GONE
-            }
-        }
     }
 
     override fun onConfigurationChanged(newConfig: Configuration) {
@@ -54,45 +49,45 @@ class CameraCapture : CameraActivity(), CvCameraViewListener2 {
         super.onConfigurationChanged(newConfig)
     }
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-        window.setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
-            WindowManager.LayoutParams.FLAG_FULLSCREEN)
-        binding = ActivityCameraCaptureBinding.inflate(layoutInflater)
-        setContentView(binding.root)
-
+    override fun onCreateView(
+        inflater: LayoutInflater, container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View? {
+        binding = CameraCaptureFragmentBinding.inflate(layoutInflater)
         mConfirmButton = binding.buttonOk
+        mConfirmButton.setOnClickListener {
+            mViewModel.setFrame( mSnapShot ?: Mat())
+            findNavController().navigate(R.id.action_cameraCapture_to_photoFragment)
+        }
         mOpenCvCameraView = binding.view
         mOpenCvCameraView.setCvCameraViewListener(this)
-        mViewModel = ViewModelProvider(this).get(ScannerViewModel::class.java)
+        mViewModel = ViewModelProvider(requireActivity()).get(ScannerViewModel::class.java)
 
-        mOpenCvCameraView.visibility = SurfaceView.VISIBLE
-        mConfirmButton.visibility = View.VISIBLE
+        return binding.root
     }
 
-    public override fun onPause() {
+    override fun onPause() {
         super.onPause()
         mOpenCvCameraView.disableView()
     }
 
-    public override fun onResume() {
+    override fun onDestroy() {
+        super.onDestroy()
+        mOpenCvCameraView.disableView()
+    }
+
+    override fun onResume() {
         super.onResume()
         if (!OpenCVLoader.initDebug()) {
             Log.d(
                 Utils.TAG,
                 "Internal OpenCV library not found. Using OpenCV Manager for initialization"
             )
-            OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION, this, mLoaderCallback)
+            OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION, context, mLoaderCallback)
         } else {
             Log.d(Utils.TAG, "OpenCV library found inside package. Using it!")
             mLoaderCallback.onManagerConnected(LoaderCallbackInterface.SUCCESS)
         }
-    }
-
-    public override fun onDestroy() {
-        super.onDestroy()
-        mOpenCvCameraView.disableView()
     }
 
     override fun onCameraViewStarted(width: Int, height: Int) {
@@ -110,12 +105,5 @@ class CameraCapture : CameraActivity(), CvCameraViewListener2 {
 
     override fun getCameraViewList(): List<CameraBridgeViewBase> {
         return listOf<CameraBridgeViewBase>(mOpenCvCameraView)
-    }
-
-    fun onButtonClicked(view: View?) {
-        mViewModel.setFrame( mSnapShot ?: Mat())
-        supportFragmentManager.beginTransaction().replace(
-            R.id.fragmentContainerView, PhotoFragment()
-        ).addToBackStack(null).commit()
     }
 }

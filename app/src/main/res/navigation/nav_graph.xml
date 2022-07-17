@@ -2,4 +2,24 @@
 <navigation xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/nav_graph" />
+    android:id="@+id/nav_graph"
+    app:startDestination="@id/cameraCapture">
+    <fragment
+        android:id="@+id/cameraCapture"
+        android:name="com.example.myapplication.CameraCapture"
+        android:label="camera_capture_fragment"
+        tools:layout="@layout/camera_capture_fragment" >
+        <action
+            android:id="@+id/action_cameraCapture_to_photoFragment"
+            app:destination="@id/photoFragment" />
+    </fragment>
+    <fragment
+        android:id="@+id/photoFragment"
+        android:name="com.example.myapplication.PhotoFragment"
+        android:label="photo_fragment"
+        tools:layout="@layout/photo_fragment" >
+        <action
+            android:id="@+id/action_photoFragment_to_cameraCapture"
+            app:destination="@id/cameraCapture" />
+    </fragment>
+</navigation>

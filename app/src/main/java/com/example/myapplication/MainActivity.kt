@@ -2,11 +2,12 @@ package com.example.myapplication
 
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import android.content.Intent
-import android.view.View
+import android.view.WindowManager
+import androidx.navigation.NavController
+import androidx.navigation.findNavController
 import com.example.myapplication.databinding.ActivityMainBinding
 
-class MainActivity : AppCompatActivity(), AuthView {
+class MainActivity : AppCompatActivity() {
     companion object {
         const val MESSAGE = "MESSAGE"
 
@@ -17,41 +18,18 @@ class MainActivity : AppCompatActivity(), AuthView {
     }
 
     private lateinit var binding: ActivityMainBinding
-    private lateinit var mPresenter: AuthPresenter
+    private lateinit var navController: NavController
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        window.setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
+            WindowManager.LayoutParams.FLAG_FULLSCREEN)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        mPresenter = AuthPresenter(this)
-        mPresenter.init()
-
-        binding.title.text = "enter your credentials"
+        navController = findNavController(R.id.nav_host_fragment_content_main)
     }
 
-    fun onEnterPressed(view: View?) {
-        val editText = binding.editName
-        val editPassword = binding.editPassword
-        val login = editText.text.toString()
-        val password = editPassword.text.toString()
-        mPresenter.tryLogIn(login, password)
-    }
-
-    override fun openContentScreen(welcomeMSG: String) {
-        //Intent intent = new Intent(this, SecondActivity.class);
-        //intent.putExtra(MESSAGE, welcomeMSG);
-        val intent = Intent(this, CameraCapture::class.java)
-        startActivity(intent)
-    }
-
-    override fun showLoginError() {
-        val manager = supportFragmentManager
-        val alert = AlertFragment("wrong login")
-        alert.show(manager, "alert")
-    }
-
-    override fun showPasswordError() {
-        val manager = supportFragmentManager
-        val alert = AlertFragment("wrong password")
-        alert.show(manager, "alert")
+    override fun onSupportNavigateUp(): Boolean {
+        return navController.navigateUp()
     }
 }
