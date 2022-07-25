@@ -5,15 +5,9 @@ import android.os.Bundle
 import android.util.Log
 import android.view.*
 import android.widget.Button
-import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
-import androidx.navigation.Navigation
-import androidx.navigation.findNavController
-import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.fragment.findNavController
-import com.example.myapplication.databinding.ActivityMainBinding
 import com.example.myapplication.databinding.CameraCaptureFragmentBinding
-import com.example.myapplication.databinding.PhotoFragmentBinding
 import org.opencv.android.*
 import org.opencv.android.CameraBridgeViewBase.CvCameraViewFrame
 import org.opencv.android.CameraBridgeViewBase.CvCameraViewListener2

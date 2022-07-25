@@ -1,21 +1,27 @@
 package com.example.myapplication
 
-import android.view.LayoutInflater
-import android.view.ViewGroup
-import android.os.Bundle
-import androidx.lifecycle.ViewModelProvider
+import android.content.Intent
 import android.graphics.Bitmap
+import android.net.Uri
+import android.os.Bundle
+import android.provider.MediaStore
 import android.util.Log
+import android.view.LayoutInflater
 import android.view.View
+import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Observer
-import org.opencv.android.Utils as OpenCVUtils
+import androidx.lifecycle.ViewModelProvider
 import com.example.myapplication.databinding.PhotoFragmentBinding
+import org.opencv.core.Core
+import org.opencv.android.Utils as OpenCVUtils
+
 
 class PhotoFragment : Fragment() {
     private lateinit var mViewModel: ScannerViewModel
     private lateinit var binding: PhotoFragmentBinding
-    override fun onCreateView(
+    private lateinit var mImagePath: String
+        override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
@@ -28,17 +34,34 @@ class PhotoFragment : Fragment() {
                 OpenCVUtils.matToBitmap(snapShot, bitMap)
                 val imgViewBefore = binding.imgViewBefore
                 imgViewBefore.setImageBitmap(bitMap)
-                Utils.makeScanning(snapShot, true)?.let {
+                Utils.makeScanning(snapShot, false)?.let {
                     bitMap =
                         Bitmap.createBitmap(it.cols(), it.rows(), Bitmap.Config.ARGB_8888)
                     OpenCVUtils.matToBitmap(it, bitMap)
                     val imgViewAfter = binding.imgViewAfter
                     imgViewAfter.setImageBitmap(bitMap)
+                    mImagePath = MediaStore.Images.Media.insertImage(
+                        requireActivity().contentResolver,
+                        bitMap,
+                        "ScannedImage",
+                        null
+                    )
                 }
             } else {
                 Log.e(Utils.TAG, " invalid frame processed: ")
             }
         })
+
+        binding.saveButton.setOnClickListener {
+            val emailIntent = Intent(Intent.ACTION_SEND)
+            emailIntent.type = "application/image"
+            emailIntent.putExtra(Intent.EXTRA_EMAIL, arrayOf("eamalafeev@gmail.com"))
+            emailIntent.putExtra(Intent.EXTRA_SUBJECT, "Scanned img")
+            emailIntent.putExtra(Intent.EXTRA_TEXT, "From Scanner app")
+            val uri: Uri = Uri.parse(mImagePath)
+            emailIntent.putExtra(Intent.EXTRA_STREAM, uri)
+            startActivity(Intent.createChooser(emailIntent, "Send mail..."))
+        }
 
         return binding.root
     }

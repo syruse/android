@@ -1,11 +1,8 @@
 package com.example.myapplication
 
-import android.content.Context
 import android.util.Log
 import org.opencv.core.*
-import org.opencv.imgcodecs.Imgcodecs
 import org.opencv.imgproc.Imgproc
-import java.io.File
 import java.util.ArrayList
 
 object Utils {
@@ -118,11 +115,5 @@ object Utils {
         } else {
             return null
         }
-    }
-
-    fun saveImage(img: Mat, context: Context) {
-        val path = context.filesDir
-        val file = File(path, "img0.jpg")
-        Imgcodecs.imwrite(file.absolutePath, img);
     }
 }
